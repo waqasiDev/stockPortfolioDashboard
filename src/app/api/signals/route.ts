@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectTelegram, sendTestSignal, signalStatus } from "@/lib/signals";
+import { connectTelegram, sendTestSignal, setCopyBudget, signalStatus } from "@/lib/signals";
 import { updateStore } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +15,7 @@ export async function POST(req: Request) {
     if (body.action === "connect") await connectTelegram();
     else if (body.action === "test") await sendTestSignal();
     else if (body.action === "disconnect") updateStore((d) => void (d.settings.telegramChatId = null));
+    else if (body.action === "budget") setCopyBudget(Number(body.usd));
     else if (body.action === "toggle") updateStore((d) => void (d.settings.signalsEnabled = Boolean(body.enabled)));
     else return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     return NextResponse.json({ ...signalStatus(), ok: true });

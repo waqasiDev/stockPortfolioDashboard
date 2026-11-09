@@ -77,6 +77,8 @@ export interface AppSettings {
   telegramChatId: string | null;
   /** send a Telegram message for every AI Trader buy/sell */
   signalsEnabled: boolean;
+  /** account size used to turn signals into exact share counts; 0 = live value of your real portfolio */
+  copyBudgetUsd: number;
 }
 
 export type AiFeature = "advisor" | "trader" | "brief" | "curator" | "journal" | "other";

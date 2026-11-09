@@ -28,6 +28,7 @@ const EMPTY: StoreData = {
     webSearch: true,
     telegramChatId: null,
     signalsEnabled: true,
+    copyBudgetUsd: 0,
   },
   usage: {},
 };
