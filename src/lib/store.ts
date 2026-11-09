@@ -26,6 +26,8 @@ const EMPTY: StoreData = {
     priceOutputPerM: 10,
     pricePerWebSearch: 0.01,
     webSearch: true,
+    telegramChatId: null,
+    signalsEnabled: true,
   },
   usage: {},
 };

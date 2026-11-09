@@ -3,6 +3,7 @@ import "server-only";
 import { arr, enumOf, nullableNum, num, obj, str, structured } from "./llm";
 import { getQuotes, yf } from "./market";
 import { researchPack } from "./research";
+import { queueSignal } from "./signals";
 import { readStore, updateStore } from "./store";
 import { nyNow } from "./time";
 import { aiActive } from "./usage";
@@ -88,6 +89,7 @@ function sell(t: TraderState, symbol: string, qty: number, price: number, trigge
   const p = t.positions[symbol];
   if (!p || qty <= 0) return null;
   qty = Math.min(qty, p.qty);
+  const fractionOfPosition = qty / p.qty;
   const fill = round(price * (1 - SLIPPAGE), 4);
   const value = round(qty * fill, 2);
   const realizedPl = round((fill - p.avgPrice) * qty, 2);
@@ -109,6 +111,7 @@ function sell(t: TraderState, symbol: string, qty: number, price: number, trigge
     realizedPlPct: round(((fill - p.avgPrice) / p.avgPrice) * 100, 2),
   };
   t.trades.unshift(trade);
+  queueSignal({ kind: "SELL", symbol, qty: trade.qty, price: fill, value, fractionOfPosition, realizedPl, realizedPlPct: trade.realizedPlPct!, trigger, reason });
   return trade;
 }
 
@@ -117,6 +120,8 @@ function buy(t: TraderState, symbol: string, amount: number, price: number, reas
   const qty = Math.floor((amount / fill) * 10_000) / 10_000; // fractional shares allowed
   if (qty <= 0) return null;
   const value = round(qty * fill, 2);
+  // portfolio size before the buy (positions at cost) — gives a "% of portfolio" you can copy at any account size
+  const equityBefore = t.cash + Object.values(t.positions).reduce((a, x) => a + x.qty * x.avgPrice, 0);
   t.cash = round(t.cash - value, 2);
   const p = t.positions[symbol];
   const rules = RISK_RULES[t.config.risk];
@@ -141,6 +146,18 @@ function buy(t: TraderState, symbol: string, amount: number, price: number, reas
   if (tp && tp > fill) pos.takeProfit = round(tp, 2);
   const trade: Trade = { id: crypto.randomUUID(), at: new Date().toISOString(), symbol, side: "BUY", qty: round(qty, 4), price: fill, value, trigger: "ai", confidence, reason };
   t.trades.unshift(trade);
+  queueSignal({
+    kind: "BUY",
+    symbol,
+    qty: trade.qty,
+    price: fill,
+    value,
+    pctOfPortfolio: equityBefore > 0 ? (value / equityBefore) * 100 : 0,
+    stopLoss: pos.stopLoss,
+    takeProfit: pos.takeProfit,
+    confidence,
+    reason,
+  });
   return trade;
 }
 
@@ -178,6 +195,15 @@ function queueOrder(t: TraderState, dec: TraderDecision, price: number | undefin
     allowQuickSell: o.allowQuickSell,
     runId: o.runId,
     status: "pending",
+  });
+  queueSignal({
+    kind: "QUEUED",
+    side: dec.action as "BUY" | "SELL",
+    symbol: dec.symbol,
+    price: price ?? 0,
+    pctOfPortfolio: dec.percentOfEquity,
+    fractionOfPosition: dec.sellFraction || 1,
+    reason: dec.reasoning,
   });
 }
 
@@ -250,7 +276,11 @@ export async function processPendingOrders() {
     const now = Date.now();
     for (const o of t.orders.filter((x) => x.status === "pending")) {
       const q = quotes[o.symbol];
-      const resolve = (status: "filled" | "cancelled" | "expired", note: string) => Object.assign(o, { status, note, resolvedAt: new Date().toISOString() });
+      const resolve = (status: "filled" | "cancelled" | "expired", note: string) => {
+        Object.assign(o, { status, note, resolvedAt: new Date().toISOString() });
+        // tell copy-traders not to place an order they may have pre-set from the "queued" message
+        if (status !== "filled") queueSignal({ kind: "CANCELLED", side: o.side, symbol: o.symbol, reason: note });
+      };
       if (now - new Date(o.createdAt).getTime() > ORDER_TTL_MS) {
         resolve("expired", "Not filled within 3 days");
         continue;

@@ -3,6 +3,7 @@ import { Bot, ChevronDown, ChevronRight, Clock, Loader2, Moon, Pause, Play, Plus
 import { useCallback, useEffect, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { PendingOrder, RiskProfile, RunTrigger, ScanEvent, Sensitivity, Trade, TraderConfig, TraderMode, TraderRun, TraderView } from "@/lib/types";
+import SignalsCard from "./SignalsCard";
 import { Empty, ExtQuote, money, pct, signedMoney, upDown } from "./ui";
 
 // validated pair (dark surface): AI = violet, benchmark = blue + dashed as secondary encoding
@@ -259,6 +260,7 @@ export default function AiTrader({ onOpenSymbol }: { onOpenSymbol: (s: string) =
       </div>
 
       {v.orders.length > 0 && <OrdersCard orders={v.orders} onCancel={(id) => act({ action: "cancelOrder", id })} />}
+      <SignalsCard />
       {v.scanner.mode === "event" && <ActivityLog log={v.scanner.log} />}
       <TradeLog trades={v.state.trades} />
       <RunHistory runs={v.state.runs.slice(1)} />

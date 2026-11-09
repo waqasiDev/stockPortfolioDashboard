@@ -101,6 +101,11 @@ It uses live web search for fresh news (turn it off with `AI_WEB_SEARCH=false`).
 - Watchlist: hit your target price · entered Strong Buy Zone · RSI oversold · ±5% day
 - Holdings: stop-loss hit · take-profit hit · overbought · ±5% day · up 10/25/50% · down 10%
 
+**Telegram trade signals** (AI Trader tab): a message for every paper buy, sell, stop-loss or target hit, queued order and cancellation. Buy messages give the size as a % of the portfolio, sell messages as a % of the position, so you can copy a trade at any account size.
+1. In Telegram, message **@BotFather**, send `/newbot` and follow the steps to get a bot token.
+2. Add `TELEGRAM_BOT_TOKEN=...` to `.env` and restart the app.
+3. Send your bot any message, then press **Connect** in the AI Trader tab.
+
 **Refresh**: auto-refresh (30s / 1m / 5m / off, paused while the tab is hidden) plus a manual refresh button.
 
 ## How the Buy signal score works

@@ -73,6 +73,10 @@ export interface AppSettings {
   pricePerWebSearch: number;
   /** let the Advisor and morning brief search the live web (better news, ~5–10× the cost per call) */
   webSearch: boolean;
+  /** Telegram chat that receives AI Trader signals (bot token lives in .env) */
+  telegramChatId: string | null;
+  /** send a Telegram message for every AI Trader buy/sell */
+  signalsEnabled: boolean;
 }
 
 export type AiFeature = "advisor" | "trader" | "brief" | "curator" | "journal" | "other";
